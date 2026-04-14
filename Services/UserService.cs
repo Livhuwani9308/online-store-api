@@ -14,15 +14,15 @@ namespace online_store_api.Services
             try
             {
                 if (model == null)
-                    return _response.CreateResponse<UserDto>(false, 400, "Invalid request", null);
+                    return _response.Create<UserDto>(false, 400, "Invalid request", null);
 
                 var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email.ToLower());
 
                 if (user == null)
-                    return _response.CreateResponse<UserDto>(false, 401, "Invalid email or password.", null);
+                    return _response.Create<UserDto>(false, 401, "Invalid email or password.", null);
 
                 if (!BCrypt.Net.BCrypt.Verify(model.Password, user.Password))
-                    return _response.CreateResponse<UserDto>(false, 401, "Invalid email or password.", null);
+                    return _response.Create<UserDto>(false, 401, "Invalid email or password.", null);
 
                 var response = new UserDto()
                 {
@@ -37,12 +37,12 @@ namespace online_store_api.Services
 
                 var token = _token.GenerateToken(response.Id, response.Email, role?.Name ?? "User");
 
-                return _response.CreateResponse(true, 200, "Login successful.", response);
+                return _response.Create(true, 200, "Login successful.", response);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return _response.CreateResponse<UserDto>(false, 500, "An unexpected error occurred.", null);
+                return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
             }
         }
 
@@ -59,13 +59,13 @@ namespace online_store_api.Services
                     string.IsNullOrWhiteSpace(model.Password)
                     )
                 {
-                    return _response.CreateResponse<UserDto>(false, 400, "Invalid request.", null);
+                    return _response.Create<UserDto>(false, 400, "Invalid request.", null);
                 }
 
                 var userExists = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email.ToLower());
 
                 if (userExists != null)
-                    return _response.CreateResponse<UserDto>(false, 409, "Duplicate record found.", null); // 400 - test 409
+                    return _response.Create<UserDto>(false, 409, "Duplicate record found.", null); // 400 - test 409
 
                 model.Email = model.Email.ToLower();
                 model.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
@@ -82,12 +82,12 @@ namespace online_store_api.Services
                     Email = model.Email
                 };
 
-                return _response.CreateResponse(true, 201, "User created successfully.", responseData);
+                return _response.Create(true, 201, "User created successfully.", responseData);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return _response.CreateResponse<UserDto>(false, 500, "An unexpected error occurred.", null);
+                return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
             }
         }
 
@@ -103,31 +103,31 @@ namespace online_store_api.Services
                     string.IsNullOrWhiteSpace(model.ConfirmPassword)
                     )
                 {
-                    return _response.CreateResponse<string>(false, 400, "Invalid request.", null);
+                    return _response.Create<string>(false, 400, "Invalid request.", null);
                 }
 
                 if (model.NewPassword != model.ConfirmPassword)
-                    return _response.CreateResponse<string>(false, 422, "Incorrect password.", null);
+                    return _response.Create<string>(false, 422, "Incorrect password.", null);
 
                 var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == model.Id);
 
                 if (user == null)
-                    return _response.CreateResponse<string>(false, 404, "User does not exist.", null);
+                    return _response.Create<string>(false, 404, "User does not exist.", null);
 
                 if (!BCrypt.Net.BCrypt.Verify(model.CurrentPassword, user.Password))
-                    return _response.CreateResponse<string>(false, 400, "Incorrect password.", null);
+                    return _response.Create<string>(false, 400, "Incorrect password.", null);
 
                 user.Password = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
 
                 _db.Users.Update(user);
                 await _db.SaveChangesAsync();
 
-                return _response.CreateResponse<string>(true, 200, "Password reset successful.", null);
+                return _response.Create<string>(true, 200, "Password reset successful.", null);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return _response.CreateResponse<string>(false, 500, "An unexpected error occurred.", null);
+                return _response.Create<string>(false, 500, "An unexpected error occurred.", null);
             }
         }
 
@@ -144,12 +144,12 @@ namespace online_store_api.Services
                     Phone = user.Phone
                 }).ToListAsync();
 
-                return _response.CreateResponse<IEnumerable<UserDto>>(true, 200, "Users retrieved successfully.", users);
+                return _response.Create<IEnumerable<UserDto>>(true, 200, "Users retrieved successfully.", users);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return _response.CreateResponse<IEnumerable<UserDto>>(false, 500, "An unexpected error occurred.", null);
+                return _response.Create<IEnumerable<UserDto>>(false, 500, "An unexpected error occurred.", null);
             }
         }
 
@@ -169,14 +169,14 @@ namespace online_store_api.Services
                         Email = query.Email,
                         Phone = query.Phone
                     };
-                    return _response.CreateResponse(true, 200, "Users retrieved successfully.", response);
+                    return _response.Create(true, 200, "Users retrieved successfully.", response);
                 }
-                return _response.CreateResponse<UserDto>(false, 404, "User not found.", null);
+                return _response.Create<UserDto>(false, 404, "User not found.", null);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return _response.CreateResponse<UserDto>(false, 500, "An unexpected error occurred.", null);
+                return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
             }
         }
 
@@ -185,12 +185,12 @@ namespace online_store_api.Services
             try
             {
                 if (id != model.Id)
-                    return _response.CreateResponse<UserDto>(false, 400, "Invalid request.", null);
+                    return _response.Create<UserDto>(false, 400, "Invalid request.", null);
 
                 var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.IsDeleted == false);
 
                 if (user == null)
-                    return _response.CreateResponse<UserDto>(false, 404, "User not found.", null);
+                    return _response.Create<UserDto>(false, 404, "User not found.", null);
 
                 user.FirstName = string.IsNullOrWhiteSpace(model.FirstName) ? user.FirstName : model.FirstName;
                 user.LastName = string.IsNullOrWhiteSpace(model.LastName) ? user.LastName : model.LastName;
@@ -208,12 +208,12 @@ namespace online_store_api.Services
                     Phone = user.Phone,
                 };
 
-                return _response.CreateResponse(true, 200, "User updated successfully.", updatedUserDto);
+                return _response.Create(true, 200, "User updated successfully.", updatedUserDto);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return _response.CreateResponse<UserDto>(false, 500, "An unexpected error occurred.", null);
+                return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
             }
         }
 
@@ -222,23 +222,23 @@ namespace online_store_api.Services
             try
             {
                 if (id <= 0)
-                    return _response.CreateResponse<string>(false, 400, "Invalid input data.", null);
+                    return _response.Create<string>(false, 400, "Invalid input data.", null);
 
                 var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.IsDeleted == false);
 
                 if (user == null)
-                    return _response.CreateResponse<string>(false, 400, "User not found.", null);
+                    return _response.Create<string>(false, 400, "User not found.", null);
 
                 user.IsDeleted = true;
 
                 _db.Users.Update(user);
                 await _db.SaveChangesAsync();
 
-                return _response.CreateResponse<string>(true, 200, "User deleted successfully.", null);
+                return _response.Create<string>(true, 200, "User deleted successfully.", null);
             }
             catch (Exception ex)
             {
-                return _response.CreateResponse<string>(false, 500, ex.Message, null);
+                return _response.Create<string>(false, 500, ex.Message, null);
             }
         }
     }

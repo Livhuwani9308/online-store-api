@@ -26,6 +26,9 @@ namespace online_store_api.Extensions
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IResponseHelper, ResponseHelper>();
             services.AddScoped<JwtTokenHelper>();
+            services.AddScoped<IProductService, ProductService>();
+
+            services.AddAutoMapper(typeof(AutoMapperProfile));
 
             services.AddCors(options =>
             {

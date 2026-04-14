@@ -4,7 +4,7 @@ namespace online_store_api.Helpers
 {
     public class ResponseHelper : IResponseHelper
     {
-        public ServiceResponse<T> CreateResponse<T>(bool isSuccess, int statusCode, string message, T? data)
+        public ServiceResponse<T> Create<T>(bool isSuccess, int statusCode, string message, T? data)
         {
             return new ServiceResponse<T>
             {
@@ -18,6 +18,6 @@ namespace online_store_api.Helpers
 
     public interface IResponseHelper
     {
-        ServiceResponse<T> CreateResponse<T>(bool isSuccess, int statusCode, string message, T? data);
+        ServiceResponse<T> Create<T>(bool isSuccess, int statusCode, string message, T? data);
     }
 }

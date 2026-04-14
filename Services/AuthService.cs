@@ -3,7 +3,6 @@ using online_store_api.Common;
 using online_store_api.Data;
 using online_store_api.Helpers;
 using online_store_api.Models;
-using online_store_api.Models.DTOs;
 using online_store_api.Models.User;
 using online_store_api.Services.Interfaces;
 
@@ -24,7 +23,7 @@ namespace online_store_api.Services
                 .FirstOrDefaultAsync(x => x.Email == dto.Email);
 
             if (exists != null)
-                return _response.CreateResponse(
+                return _response.Create(
                     false,
                     400,
                     "Email already exists",
@@ -34,7 +33,7 @@ namespace online_store_api.Services
                 .FirstOrDefaultAsync(r => r.Name == "Customer");
 
             if (role == null)
-                return _response.CreateResponse(
+                return _response.Create(
                     false,
                     400,
                     "Role not found",
@@ -52,7 +51,7 @@ namespace online_store_api.Services
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return _response.CreateResponse(
+            return _response.Create(
                 true,
                 201,
                 "Registration successful",
@@ -76,13 +75,13 @@ namespace online_store_api.Services
             ).FirstOrDefaultAsync();
 
             if (userData == null || userData.IsDeleted)
-                return _response.CreateResponse<AuthResponseDto>(
+                return _response.Create<AuthResponseDto>(
                     false,
                     401,
                     "Invalid credentials",
                     null);
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, userData.Password))
-                return _response.CreateResponse<AuthResponseDto>(
+                return _response.Create<AuthResponseDto>(
                     false,
                     401,
                     "Invalid credentials",
@@ -112,7 +111,7 @@ namespace online_store_api.Services
                 ExpiresAt = expires
             };
 
-            return _response.CreateResponse(
+            return _response.Create(
                 true,
                 200,
                 "Login successful",
@@ -127,7 +126,7 @@ namespace online_store_api.Services
                     !t.IsRevoked);
 
             if (token == null || token.Expires < DateTime.UtcNow)
-                return _response.CreateResponse<AuthResponseDto>(
+                return _response.Create<AuthResponseDto>(
                     false,
                     401,
                     "Invalid refresh token",
@@ -135,7 +134,7 @@ namespace online_store_api.Services
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == token.UserId);
             if (user == null || user.IsDeleted)
-                return _response.CreateResponse<AuthResponseDto>(
+                return _response.Create<AuthResponseDto>(
                     false,
                     401,
                     "Invalid user",
@@ -143,7 +142,7 @@ namespace online_store_api.Services
 
             var role = await _context.Roles.FirstOrDefaultAsync(r => r.Id == user.RoleId);
             if (role == null)
-                return _response.CreateResponse<AuthResponseDto>(
+                return _response.Create<AuthResponseDto>(
                     false,
                     401,
                     "Invalid role",
@@ -163,7 +162,7 @@ namespace online_store_api.Services
                 ExpiresAt = expires
             };
 
-            return _response.CreateResponse(
+            return _response.Create(
                 true,
                 200,
                 "Token refreshed",

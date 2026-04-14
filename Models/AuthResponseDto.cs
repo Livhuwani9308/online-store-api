@@ -1,4 +1,4 @@
-﻿namespace online_store_api.Models.DTOs
+﻿namespace online_store_api.Models
 {
     public class AuthResponseDto
     {

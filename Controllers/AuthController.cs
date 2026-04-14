@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using online_store_api.Models.DTOs;
+using online_store_api.Models;
 using online_store_api.Models.User;
 using online_store_api.Services.Interfaces;
 
