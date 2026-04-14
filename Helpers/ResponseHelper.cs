@@ -14,23 +14,10 @@ namespace online_store_api.Helpers
                 Data = data
             };
         }
-
-        public ServiceResponseWithToken<T> CreateResponse<T>(bool isSuccess, int statusCode, string message, T? data, string token)
-        {
-            return new ServiceResponseWithToken<T>
-            {
-                IsSuccess = isSuccess,
-                StatusCode = statusCode,
-                Message = message,
-                Data = data,
-                Token = token
-            };
-        }
     }
 
     public interface IResponseHelper
     {
         ServiceResponse<T> CreateResponse<T>(bool isSuccess, int statusCode, string message, T? data);
-        ServiceResponseWithToken<T> CreateResponse<T>(bool isSuccess, int statusCode, string message, T? data, string token);
     }
 }

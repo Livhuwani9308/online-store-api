@@ -22,8 +22,13 @@ namespace online_store_api.Middleware
                 context.Response.StatusCode = 500;
 
                 await context.Response.WriteAsJsonAsync(
-                    ApiResponse<string>.FailureResponse(
-                        "An unexpected error occurred."));
+                    new ServiceResponse<string>
+                    {
+                        IsSuccess = false,
+                        StatusCode = 500,
+                        Message = "An unexpected error occurred.",
+                        Data = null
+                    });
             }
         }
     }

@@ -80,16 +80,13 @@ namespace online_store_api.Services
                     false,
                     401,
                     "Invalid credentials",
-                    null,
-                    string.Empty);
-
+                    null);
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, userData.Password))
                 return _response.CreateResponse<AuthResponseDto>(
                     false,
                     401,
                     "Invalid credentials",
-                    null,
-                    string.Empty);
+                    null);
 
             var (accessToken, expires) = _jwt.GenerateToken(
                 userData.Id,
@@ -99,7 +96,7 @@ namespace online_store_api.Services
             var refreshToken = new RefreshToken
             {
                 Token = Guid.NewGuid().ToString(),
-                Expires = DateTime.UtcNow.AddDays(7),
+                Expires = DateTime.UtcNow.AddDays(3),
                 UserId = userData.Id
             };
 
@@ -119,8 +116,7 @@ namespace online_store_api.Services
                 true,
                 200,
                 "Login successful",
-                responseDto,
-                accessToken);
+                responseDto);
         }
 
         public async Task<ServiceResponse<AuthResponseDto>> RefreshTokenAsync(string refreshToken)
@@ -135,19 +131,23 @@ namespace online_store_api.Services
                     false,
                     401,
                     "Invalid refresh token",
-                    null,
-                    string.Empty);
+                    null);
 
-            var user = await _context.Users.FindAsync(token.UserId);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == token.UserId);
             if (user == null || user.IsDeleted)
                 return _response.CreateResponse<AuthResponseDto>(
                     false,
                     401,
                     "Invalid user",
-                    null,
-                    string.Empty);
+                    null);
 
-            var role = await _context.Roles.FindAsync(user.RoleId);
+            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Id == user.RoleId);
+            if (role == null)
+                return _response.CreateResponse<AuthResponseDto>(
+                    false,
+                    401,
+                    "Invalid role",
+                    null);
 
             var (accessToken, expires) = _jwt.GenerateToken(
                 user.Id,
@@ -167,8 +167,7 @@ namespace online_store_api.Services
                 true,
                 200,
                 "Token refreshed",
-                responseDto,
-                accessToken);
+                responseDto);
         }
     }
 }

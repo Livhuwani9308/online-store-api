@@ -14,15 +14,15 @@ namespace online_store_api.Services
             try
             {
                 if (model == null)
-                    return _response.CreateResponse<UserDto>(false, 400, "Invalid request", null, null!);
+                    return _response.CreateResponse<UserDto>(false, 400, "Invalid request", null);
 
                 var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email.ToLower());
 
                 if (user == null)
-                    return _response.CreateResponse<UserDto>(false, 401, "Invalid email or password.", null, null!);
+                    return _response.CreateResponse<UserDto>(false, 401, "Invalid email or password.", null);
 
                 if (!BCrypt.Net.BCrypt.Verify(model.Password, user.Password))
-                    return _response.CreateResponse<UserDto>(false, 401, "Invalid email or password.", null, null!);
+                    return _response.CreateResponse<UserDto>(false, 401, "Invalid email or password.", null);
 
                 var response = new UserDto()
                 {
@@ -37,12 +37,12 @@ namespace online_store_api.Services
 
                 var token = _token.GenerateToken(response.Id, response.Email, role?.Name ?? "User");
 
-                return _response.CreateResponse(true, 200, "Login successful.", response, token.ToString());
+                return _response.CreateResponse(true, 200, "Login successful.", response);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return _response.CreateResponse<UserDto>(false, 500, "An unexpected error occurred.", null, null!);
+                return _response.CreateResponse<UserDto>(false, 500, "An unexpected error occurred.", null);
             }
         }
 
