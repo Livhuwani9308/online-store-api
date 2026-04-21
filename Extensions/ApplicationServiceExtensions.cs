@@ -25,8 +25,11 @@ namespace online_store_api.Extensions
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IResponseHelper, ResponseHelper>();
-            services.AddScoped<JwtTokenHelper>();
             services.AddScoped<IProductService, ProductService>();
+            services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<IMediaService, MediaService>();
+            services.AddScoped<JwtTokenHelper>();
+            services.AddScoped<SirvAuthService>();
 
             services.AddAutoMapper(typeof(AutoMapperProfile));
 

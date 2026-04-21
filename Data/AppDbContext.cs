@@ -14,6 +14,8 @@ namespace online_store_api.Data
         public DbSet<Product> Products => Set<Product>();
         public DbSet<Category> Categories => Set<Category>();
         public DbSet<ProductSize> ProductSizes => Set<ProductSize>();
+        public DbSet<ProductImage> ProductImages => Set<ProductImage>();
+        public DbSet<TenantDocument> TenantDocuments => Set<TenantDocument>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

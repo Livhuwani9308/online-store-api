@@ -9,6 +9,9 @@
         public decimal Price { get; set; }
         public int CategoryId { get; set; }
         public string Color { get; set; } = string.Empty;
+
+        public string? ThumbnailUrl { get; set; }
+
         public List<ProductSizeDto> Sizes { get; set; } = [];
     }
 }
