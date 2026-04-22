@@ -44,6 +44,7 @@ namespace online_store_api.Services
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
                 Email = dto.Email,
+                Phone = dto.Phone,
                 Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 RoleId = role.Id
             };

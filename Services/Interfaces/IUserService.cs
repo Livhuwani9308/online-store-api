@@ -5,8 +5,8 @@ namespace online_store_api.Services.Interfaces
 {
     public interface IUserService
     {
-        Task<ServiceResponse<UserDto>> LoginAsync(LoginDto model);
-        Task<ServiceResponse<UserDto>> RegisterAsync(User model);
+        //Task<ServiceResponse<UserDto>> LoginAsync(LoginDto model);
+        //Task<ServiceResponse<UserDto>> RegisterAsync(User model);
         Task<ServiceResponse<IEnumerable<UserDto>>> GetUsersListAsync();
         Task<ServiceResponse<UserDto>> SearchUserAsync(SearchUserModelDto model);
         Task<ServiceResponse<UserDto>> UpdateUserAsync(int id, UserDto model);

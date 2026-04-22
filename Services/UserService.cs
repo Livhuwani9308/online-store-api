@@ -7,89 +7,89 @@ using online_store_api.Services.Interfaces;
 
 namespace online_store_api.Services
 {
-    public class UserService(AppDbContext _db, IResponseHelper _response, JwtTokenHelper _token) : IUserService
+    public class UserService(AppDbContext _db, IResponseHelper _response) : IUserService
     {
-        public async Task<ServiceResponse<UserDto>> LoginAsync(LoginDto model)
-        {
-            try
-            {
-                if (model == null)
-                    return _response.Create<UserDto>(false, 400, "Invalid request", null);
+        //public async Task<ServiceResponse<UserDto>> LoginAsync(LoginDto model)
+        //{
+        //    try
+        //    {
+        //        if (model == null)
+        //            return _response.Create<UserDto>(false, 400, "Invalid request", null);
 
-                var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email.ToLower());
+        //        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email.ToLower());
 
-                if (user == null)
-                    return _response.Create<UserDto>(false, 401, "Invalid email or password.", null);
+        //        if (user == null)
+        //            return _response.Create<UserDto>(false, 401, "Invalid email or password.", null);
 
-                if (!BCrypt.Net.BCrypt.Verify(model.Password, user.Password))
-                    return _response.Create<UserDto>(false, 401, "Invalid email or password.", null);
+        //        if (!BCrypt.Net.BCrypt.Verify(model.Password, user.Password))
+        //            return _response.Create<UserDto>(false, 401, "Invalid email or password.", null);
 
-                var response = new UserDto()
-                {
-                    Id = user.Id,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Email = user.Email,
-                    Phone = user.Phone,
-                };
+        //        var response = new UserDto()
+        //        {
+        //            Id = user.Id,
+        //            FirstName = user.FirstName,
+        //            LastName = user.LastName,
+        //            Email = user.Email,
+        //            Phone = user.Phone,
+        //        };
 
-                var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == user.RoleId);
+        //        var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == user.RoleId);
 
-                var token = _token.GenerateToken(response.Id, response.Email, role?.Name ?? "User");
+        //        var token = _token.GenerateToken(response.Id, response.Email, role?.Name ?? "User");
 
-                return _response.Create(true, 200, "Login successful.", response);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
-            }
-        }
+        //        return _response.Create(true, 200, "Login successful.", response);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine(ex.Message);
+        //        return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
+        //    }
+        //}
 
-        public async Task<ServiceResponse<UserDto>> RegisterAsync(User model)
-        {
-            try
-            {
-                if (
-                    model == null ||
-                    string.IsNullOrWhiteSpace(model.FirstName) ||
-                    string.IsNullOrWhiteSpace(model.LastName) ||
-                    string.IsNullOrWhiteSpace(model.Email) ||
-                    string.IsNullOrWhiteSpace(model.Phone) ||
-                    string.IsNullOrWhiteSpace(model.Password)
-                    )
-                {
-                    return _response.Create<UserDto>(false, 400, "Invalid request.", null);
-                }
+        //public async Task<ServiceResponse<UserDto>> RegisterAsync(User model)
+        //{
+        //    try
+        //    {
+        //        if (
+        //            model == null ||
+        //            string.IsNullOrWhiteSpace(model.FirstName) ||
+        //            string.IsNullOrWhiteSpace(model.LastName) ||
+        //            string.IsNullOrWhiteSpace(model.Email) ||
+        //            string.IsNullOrWhiteSpace(model.Phone) ||
+        //            string.IsNullOrWhiteSpace(model.Password)
+        //            )
+        //        {
+        //            return _response.Create<UserDto>(false, 400, "Invalid request.", null);
+        //        }
 
-                var userExists = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email.ToLower());
+        //        var userExists = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email.ToLower());
 
-                if (userExists != null)
-                    return _response.Create<UserDto>(false, 409, "Duplicate record found.", null); // 400 - test 409
+        //        if (userExists != null)
+        //            return _response.Create<UserDto>(false, 409, "Duplicate record found.", null); // 400 - test 409
 
-                model.Email = model.Email.ToLower();
-                model.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
+        //        model.Email = model.Email.ToLower();
+        //        model.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
 
-                _db.Users.Add(model);
-                await _db.SaveChangesAsync();
+        //        _db.Users.Add(model);
+        //        await _db.SaveChangesAsync();
 
-                var responseData = new UserDto()
-                {
-                    Id = model.Id,
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
-                    Phone = model.Phone,
-                    Email = model.Email
-                };
+        //        var responseData = new UserDto()
+        //        {
+        //            Id = model.Id,
+        //            FirstName = model.FirstName,
+        //            LastName = model.LastName,
+        //            Phone = model.Phone,
+        //            Email = model.Email
+        //        };
 
-                return _response.Create(true, 201, "User created successfully.", responseData);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
-            }
-        }
+        //        return _response.Create(true, 201, "User created successfully.", responseData);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine(ex.Message);
+        //        return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
+        //    }
+        //}
 
         public async Task<ServiceResponse<string>> ResetPasswordAsync(int id, ResetPasswordDto model)
         {

@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using online_store_api.Models.User;
 using online_store_api.Services.Interfaces;
 
@@ -9,23 +8,23 @@ namespace online_store_api.Controllers
     {
         private readonly IUserService _userService = userService;
 
-        [AllowAnonymous]
-        [HttpPost("user-register")]
-        public async Task<IActionResult> Register(User model)
-        {
-            var response = await _userService.RegisterAsync(model);
+        //[AllowAnonymous]
+        //[HttpPost("user-register")]
+        //public async Task<IActionResult> Register(User model)
+        //{
+        //    var response = await _userService.RegisterAsync(model);
 
-            return StatusCode(response.StatusCode, response);
-        }
+        //    return StatusCode(response.StatusCode, response);
+        //}
 
-        [AllowAnonymous]
-        [HttpPost("user-login")]
-        public async Task<IActionResult> Login(LoginDto model)
-        {
-            var response = await _userService.LoginAsync(model);
+        //[AllowAnonymous]
+        //[HttpPost("user-login")]
+        //public async Task<IActionResult> Login(LoginDto model)
+        //{
+        //    var response = await _userService.LoginAsync(model);
 
-            return StatusCode(response.StatusCode, response);
-        }
+        //    return StatusCode(response.StatusCode, response);
+        //}
 
         [HttpGet]
         public async Task<IActionResult> GetAll()

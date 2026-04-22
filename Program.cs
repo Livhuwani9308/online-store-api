@@ -1,3 +1,4 @@
+using online_store_api.Data.Seed;
 using online_store_api.Extensions;
 using online_store_api.Middleware;
 
@@ -29,5 +30,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+await DbSeeder.SeedAdminAsync(app.Services);
 
 app.Run();
