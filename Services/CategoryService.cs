@@ -27,15 +27,15 @@ namespace online_store_api.Services
             return _response.Create(true, 201, "Created", dto);
         }
 
-        public async Task<ServiceResponse<IEnumerable<CategoryDto>>> GetAllAsync()
+        public async Task<ServiceResponse<List<Category>>> GetAllAsync()
         {
             var categories = await _db.Categories
                 .Where(c => !c.IsDeleted)
                 .ToListAsync();
 
-            var dto = mapper.Map<IEnumerable<CategoryDto>>(categories);
+            //var dto = mapper.Map<IEnumerable<CategoryDto>>(categories);
 
-            return _response.Create(true, 200, "Success", dto);
+            return _response.Create(true, 200, "Success", categories);
         }
 
         public async Task<ServiceResponse<CategoryDto>> GetByIdAsync(int id)
