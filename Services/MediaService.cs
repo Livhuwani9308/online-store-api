@@ -151,9 +151,9 @@ namespace online_store_api.Services
         }
 
         // -------------------- Category Thumbnail --------------------
-        public async Task<string> UploadCategoryThumbnailAsync(int id, IFormFile file)
+        public async Task<string> UploadCategoryThumbnailAsync(int categoryId, IFormFile file)
         {
-            var sirvFolder = $"online-store/categories/{id}";
+            var sirvFolder = $"online-store/categories/{categoryId}";
             var token = await _authService.GetAccessTokenAsync();
 
             var sirvUploadUrl =
@@ -176,7 +176,7 @@ namespace online_store_api.Services
                 $"{_config["SirvSettings:CdnUrl"]}/{sirvFolder}/{file.FileName}";
 
             // Save to Category table
-            var category = await _db.Categories.FindAsync(id);
+            var category = await _db.Categories.FindAsync(categoryId);
             category.ThumbnailUrl = url;
 
             await _db.SaveChangesAsync();
@@ -184,14 +184,24 @@ namespace online_store_api.Services
             return url;
         }
 
-        public async Task<bool> DeleteCategoryThumbnailAsync(int id)
+        public async Task<bool> DeleteCategoryThumbnailAsync(int categoryId)
         {
-            var category = await _db.Categories.FindAsync(id);
-            if (category == null)
+            var category = await _db.Categories.FindAsync(categoryId);
+            if (category == null || string.IsNullOrEmpty(category.ThumbnailUrl))
                 return false;
 
-            category.ThumbnailUrl = null;
+            var fileName = Path.GetFileName(category.ThumbnailUrl);
+            var sirvFolder = $"online-store/categories/{categoryId}";
+            var token = await _authService.GetAccessTokenAsync();
 
+            var deleteUrl = $"{_config["SirvSettings:BaseUrl"]}/files/delete?filename=/{sirvFolder}/{fileName}";
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, deleteUrl);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            await _httpClient.SendAsync(request);
+
+            category.ThumbnailUrl = null;
             await _db.SaveChangesAsync();
 
             return true;

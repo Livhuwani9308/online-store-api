@@ -20,18 +20,18 @@ namespace online_store_api.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Create(CategoryDto model)
+        public async Task<IActionResult> Create(CategoryDto model, IFormFile? thumbnail)
         {
-            var response = await _service.CreateAsync(model);
+            var response = await _service.CreateAsync(model, thumbnail);
 
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, CategoryDto model)
+        public async Task<IActionResult> Update([FromForm] CategoryDto model, IFormFile? thumbnail)
         {
-            var response = await _service.UpdateAsync(id, model);
+            var response = await _service.UpdateAsync(model, thumbnail);
 
             return StatusCode(response.StatusCode, response);
         }

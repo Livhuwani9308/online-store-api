@@ -9,9 +9,9 @@ namespace online_store_api.Services.Interfaces
         //Task<ServiceResponse<IEnumerable<CategoryDto>>> GetAllAsync();
         //Task<ServiceResponse<CategoryDto>> UpdateAsync(int id, CreateCategoryDto model);
         //Task<ServiceResponse<string>> DeleteAsync(int id);
-        Task<ServiceResponse<CategoryDto>> CreateAsync(CategoryDto model);
-        Task<ServiceResponse<List<Category>>> GetAllAsync();
-        Task<ServiceResponse<CategoryDto>> UpdateAsync(int id, CategoryDto model);
+        Task<ServiceResponse<CategoryDto>> CreateAsync(CategoryDto model, IFormFile? thumbnail);
+        Task<ServiceResponse<IEnumerable<CategoryDto>>> GetAllAsync();
+        Task<ServiceResponse<CategoryDto>> UpdateAsync(CategoryDto model, IFormFile? thumbnail);
         Task<ServiceResponse<string>> DeleteAsync(int id);
         Task<ServiceResponse<CategoryDto>> GetByIdAsync(int id);
     }

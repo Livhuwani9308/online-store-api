@@ -10,7 +10,7 @@ namespace online_store_api.Services.Interfaces
         Task<bool> DeleteMediaAsync(int id, string fileName);
 
         // -------------------- Category Thumbnail --------------------
-        Task<string> UploadCategoryThumbnailAsync(int id, IFormFile file);
+        Task<string> UploadCategoryThumbnailAsync(int categoryId, IFormFile file);
         Task<bool> DeleteCategoryThumbnailAsync(int id);
 
         // -------------------- Tenant Documents --------------------

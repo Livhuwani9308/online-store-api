@@ -11,31 +11,38 @@ namespace online_store_api.Services
     public class CategoryService(
         AppDbContext _db,
         IMapper mapper,
-        IResponseHelper _response) : ICategoryService
+        IResponseHelper _response,
+        IMediaService _mediaService) : ICategoryService
     {
-        public async Task<ServiceResponse<CategoryDto>> CreateAsync(CategoryDto model)
+        public async Task<ServiceResponse<CategoryDto>> CreateAsync(CategoryDto model, IFormFile? thumbnail)
         {
             var category = mapper.Map<Category>(model);
-
             category.CreatedAt = DateTime.UtcNow;
 
             _db.Categories.Add(category);
             await _db.SaveChangesAsync();
 
-            var dto = mapper.Map<CategoryDto>(category);
+            if (thumbnail != null)
+            {
+                var url = await _mediaService.UploadCategoryThumbnailAsync(category.Id, thumbnail);
+                category.ThumbnailUrl = url;
+                await _db.SaveChangesAsync();
+            }
 
+            var dto = mapper.Map<CategoryDto>(category);
             return _response.Create(true, 201, "Created", dto);
         }
 
-        public async Task<ServiceResponse<List<Category>>> GetAllAsync()
+
+        public async Task<ServiceResponse<IEnumerable<CategoryDto>>> GetAllAsync()
         {
             var categories = await _db.Categories
                 .Where(c => !c.IsDeleted)
                 .ToListAsync();
 
-            //var dto = mapper.Map<IEnumerable<CategoryDto>>(categories);
+            var dto = mapper.Map<IEnumerable<CategoryDto>>(categories);
 
-            return _response.Create(true, 200, "Success", categories);
+            return _response.Create(true, 200, "Success", dto);
         }
 
         public async Task<ServiceResponse<CategoryDto>> GetByIdAsync(int id)
@@ -52,19 +59,24 @@ namespace online_store_api.Services
             return _response.Create(true, 200, "Success", dto);
         }
 
-        public async Task<ServiceResponse<CategoryDto>> UpdateAsync(int id, CategoryDto model)
+        public async Task<ServiceResponse<CategoryDto>> UpdateAsync(CategoryDto model, IFormFile? thumbnail)
         {
-            var category = await _db.Categories.FindAsync(id);
+            var category = await _db.Categories.FindAsync(model.Id);
 
             if (category == null)
                 return _response.Create<CategoryDto>(false, 404, "Not found", null);
 
             mapper.Map(model, category);
 
+            if (thumbnail != null)
+            {
+                var url = await _mediaService.UploadCategoryThumbnailAsync(category.Id, thumbnail);
+                category.ThumbnailUrl = url;
+            }
+
             await _db.SaveChangesAsync();
 
             var dto = mapper.Map<CategoryDto>(category);
-
             return _response.Create(true, 200, "Updated", dto);
         }
 
