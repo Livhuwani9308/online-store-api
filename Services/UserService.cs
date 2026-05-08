@@ -50,68 +50,102 @@ namespace online_store_api.Services
             }
         }
 
-        public async Task<ServiceResponse<IEnumerable<UserDto>>> GetUsersListAsync()
+        public async Task<ServiceResponse<IEnumerable<UserDto>>> GetAllAsync(
+            int? id,
+            string? email,
+            string? firstName,
+            string? lastName,
+            int page = 1,
+            int pageSize = 10)
         {
             try
             {
-                var users = await _db.Users.Select(user => new UserDto
+                var query = _db.Users
+                    .AsNoTracking()
+                    .Where(u => !u.IsDeleted)
+                    .AsQueryable();
+
+                if (id.HasValue)
                 {
-                    Id = user.Id,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Email = user.Email,
-                    Phone = user.Phone,
-                    ThumbnailUrl = user.ThumbnailUrl
-                }).ToListAsync();
-
-                return _response.Create<IEnumerable<UserDto>>(true, 200, "Users retrieved successfully.", users);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                return _response.Create<IEnumerable<UserDto>>(false, 500, "An unexpected error occurred.", null);
-            }
-        }
-
-        public async Task<ServiceResponse<UserDto>> SearchUserAsync(SearchUserModelDto model)
-        {
-            try
-            {
-                var query = await _db.Users.AsQueryable().Where(u => (u.Id == model.Id || u.Email == model.Email.ToLower()) && u.IsDeleted == false).FirstOrDefaultAsync();
-
-                if (query != null)
-                {
-                    var response = new UserDto()
-                    {
-                        Id = query.Id,
-                        FirstName = query.FirstName,
-                        LastName = query.LastName,
-                        Email = query.Email,
-                        Phone = query.Phone,
-                        ThumbnailUrl = query.ThumbnailUrl
-                    };
-                    return _response.Create(true, 200, "Users retrieved successfully.", response);
+                    query = query.Where(u => u.Id == id.Value);
                 }
-                return _response.Create<UserDto>(false, 404, "User not found.", null);
+
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    email = email.Trim().ToLower();
+
+                    query = query.Where(u =>
+                        u.Email.ToLower().Contains(email));
+                }
+
+                if (!string.IsNullOrWhiteSpace(firstName))
+                {
+                    firstName = firstName.Trim().ToLower();
+
+                    query = query.Where(u =>
+                        u.FirstName.ToLower().Contains(firstName));
+                }
+
+                if (!string.IsNullOrWhiteSpace(lastName))
+                {
+                    lastName = lastName.Trim().ToLower();
+
+                    query = query.Where(u =>
+                        u.LastName.ToLower().Contains(lastName));
+                }
+
+                var users = await query
+                    .OrderByDescending(u => u.Id)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(user => new UserDto
+                    {
+                        Id = user.Id,
+                        FirstName = user.FirstName,
+                        LastName = user.LastName,
+                        Email = user.Email,
+                        Phone = user.Phone,
+                        ThumbnailUrl = user.ThumbnailUrl
+                    })
+                    .ToListAsync();
+
+                return _response.Create<IEnumerable<UserDto>>(
+                    true,
+                    200,
+                    "Users retrieved successfully.",
+                    users);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
+
+                return _response.Create<IEnumerable<UserDto>>(
+                    false,
+                    500,
+                    "An unexpected error occurred.",
+                    null);
             }
         }
 
-        public async Task<ServiceResponse<UserDto>> UpdateUserAsync(UserDto model, IFormFile? thumbnail)
+        public async Task<ServiceResponse<UserDto>> UpdateUserAsync(
+            UserDto model,
+            IFormFile? thumbnail)
         {
             try
             {
-                if (model.Id != model.Id)
-                    return _response.Create<UserDto>(false, 400, "Invalid request.", null);
-
-                var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == model.Id && u.IsDeleted == false);
+                var user = await _db.Users
+                    .FirstOrDefaultAsync(u =>
+                        u.Id == model.Id &&
+                        !u.IsDeleted);
 
                 if (user == null)
-                    return _response.Create<UserDto>(false, 404, "User not found.", null);
+                {
+                    return _response.Create<UserDto>(
+                        false,
+                        404,
+                        "User not found.",
+                        null);
+                }
 
                 user.FirstName =
                     string.IsNullOrWhiteSpace(model.FirstName)
@@ -133,35 +167,32 @@ namespace online_store_api.Services
                         ? user.Email
                         : model.Email;
 
-                // Upload thumbnail if provided
                 if (thumbnail != null)
                 {
                     var url = await _mediaService.UploadUserThumbnailAsync(user.Id, thumbnail);
+
                     user.ThumbnailUrl = url;
                 }
 
-                _db.Users.Update(user);
                 await _db.SaveChangesAsync();
 
                 var dto = mapper.Map<UserDto>(user);
 
-                //var updatedUserDto = new UserDto()
-                //{
-                //    Id = user.Id,
-                //    FirstName = user.FirstName,
-                //    LastName = user.LastName,
-                //    Email = user.Email,
-                //    Phone = user.Phone,
-                //    ThumbnailUrl = user.ThumbnailUrl
-                //};
-
-                return _response.Create(true, 200, "User updated successfully.", dto);
+                return _response.Create(
+                    true,
+                    200,
+                    "User updated successfully.",
+                    dto);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
 
-                return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
+                return _response.Create<UserDto>(
+                    false,
+                    500,
+                    "An unexpected error occurred.",
+                    null);
             }
         }
 

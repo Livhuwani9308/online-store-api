@@ -11,9 +11,27 @@ namespace online_store_api.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            string? search,
+            string? brand,
+            string? color,
+            int? categoryId,
+            decimal? minPrice,
+            decimal? maxPrice,
+            bool? isAvailable,
+            int page = 1,
+            int pageSize = 10)
         {
-            var response = await _service.GetAllAsync();
+            var response = await _service.GetAllAsync(
+                search,
+                brand,
+                color,
+                categoryId,
+                minPrice,
+                maxPrice,
+                isAvailable,
+                page,
+                pageSize);
 
             return StatusCode(response.StatusCode, response);
         }
@@ -29,18 +47,18 @@ namespace online_store_api.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Create(ProductDto model)
+        public async Task<IActionResult> Create([FromForm] ProductDto model, [FromForm] IFormFileCollection? productImages)
         {
-            var response = await _service.CreateAsync(model);
+            var response = await _service.CreateAsync(model, productImages);
 
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, ProductDto model)
+        public async Task<IActionResult> Update([FromForm] ProductDto model, [FromForm] IFormFileCollection? productImages)
         {
-            var response = await _service.UpdateAsync(id, model);
+            var response = await _service.UpdateAsync(model, productImages);
 
             return StatusCode(response.StatusCode, response);
         }
@@ -50,15 +68,6 @@ namespace online_store_api.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var response = await _service.DeleteAsync(id);
-
-            return StatusCode(response.StatusCode, response);
-        }
-
-        [HttpPost("filter")]
-        [AllowAnonymous]
-        public async Task<IActionResult> Filter(ProductFilterDto filter)
-        {
-            var response = await _service.SearchAsync(filter);
 
             return StatusCode(response.StatusCode, response);
         }

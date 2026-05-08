@@ -10,149 +10,323 @@ namespace online_store_api.Services
 {
     public class ProductService(
         AppDbContext _db,
-        IMapper mapper,
-        IResponseHelper _response) : IProductService
+        IMapper _mapper,
+        IResponseHelper _response,
+        IMediaService _mediaService)
+        : IProductService
     {
-        public async Task<ServiceResponse<ProductDto>> CreateAsync(ProductDto model)
+        public async Task<ServiceResponse<ProductDto>> CreateAsync(
+            ProductDto model,
+            IFormFileCollection? productImages)
         {
-            var product = mapper.Map<Product>(model);
+            var categoryExists = await _db.Categories
+                .AnyAsync(x => x.Id == model.CategoryId);
+
+            if (!categoryExists)
+            {
+                return _response.Create<ProductDto>(
+                    false,
+                    404,
+                    "Category not found",
+                    null);
+            }
+
+            var product = _mapper.Map<Product>(model);
+
             product.CreatedAt = DateTime.UtcNow;
 
             _db.Products.Add(product);
+
             await _db.SaveChangesAsync();
 
+            // Sizes
             if (model.Sizes.Any())
             {
-                var sizes = model.Sizes.Select(s => new ProductSize
+                var sizes = model.Sizes.Select(x => new ProductSize
                 {
                     ProductId = product.Id,
-                    SizeValue = s.SizeValue,
-                    StockQuantity = s.StockQuantity
+                    SizeValue = x.SizeValue,
+                    StockQuantity = x.StockQuantity
                 });
 
-                _db.ProductSizes.AddRange(sizes);
+                await _db.ProductSizes.AddRangeAsync(sizes);
+
                 await _db.SaveChangesAsync();
             }
 
-            return _response.Create(true, 201, "Created", mapper.Map<ProductDto>(product));
-        }
-
-        public async Task<ServiceResponse<IEnumerable<ProductDto>>> GetAllAsync()
-        {
-            var products = await _db.Products
-                .Where(p => !p.IsDeleted)
-                .ToListAsync();
-
-            var result = new List<ProductDto>();
-
-            foreach (var product in products)
+            // Images
+            if (productImages != null && productImages.Count > 0)
             {
-                var sizes = await _db.ProductSizes
-                    .Where(s => s.ProductId == product.Id && !s.IsDeleted)
-                    .ToListAsync();
+                var uploadedImages =
+                    await _mediaService.UploadProductMediaAsync(
+                        product.Id,
+                        productImages);
 
-                var dto = mapper.Map<ProductDto>(product);
-                dto.Sizes = mapper.Map<List<ProductSizeDto>>(sizes);
+                var firstImage = uploadedImages.FirstOrDefault();
 
-                result.Add(dto);
+                if (firstImage != null)
+                {
+                    product.ThumbnailUrl = firstImage.FileUrl;
+
+                    await _db.SaveChangesAsync();
+                }
             }
 
-            return _response.Create<IEnumerable<ProductDto>>(true, 200, "Success", result);
+            var dto = _mapper.Map<ProductDto>(product);
+
+            dto.Sizes = model.Sizes;
+
+            return _response.Create(
+                true,
+                201,
+                "Product created successfully",
+                dto);
+        }
+
+        public async Task<ServiceResponse<IEnumerable<ProductDto>>> GetAllAsync(
+            string? search = null,
+            string? brand = null,
+            string? color = null,
+            int? categoryId = null,
+            decimal? minPrice = null,
+            decimal? maxPrice = null,
+            bool? isAvailable = null,
+            int page = 1,
+            int pageSize = 10)
+        {
+            var query = _db.Products
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted);
+
+            // Filters
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(x =>
+                    x.Name.ToLower().Contains(search.ToLower()) ||
+                    x.Description.ToLower().Contains(search.ToLower()));
+            }
+
+            if (!string.IsNullOrWhiteSpace(brand))
+            {
+                query = query.Where(x =>
+                    x.Brand.ToLower() == brand.ToLower());
+            }
+
+            if (!string.IsNullOrWhiteSpace(color))
+            {
+                query = query.Where(x =>
+                    x.Color.ToLower() == color.ToLower());
+            }
+
+            if (categoryId.HasValue)
+            {
+                query = query.Where(x =>
+                    x.CategoryId == categoryId.Value);
+            }
+
+            if (minPrice.HasValue)
+            {
+                query = query.Where(x =>
+                    x.Price >= minPrice.Value);
+            }
+
+            if (maxPrice.HasValue)
+            {
+                query = query.Where(x =>
+                    x.Price <= maxPrice.Value);
+            }
+
+            if (isAvailable.HasValue)
+            {
+                query = query.Where(x =>
+                    x.IsAvailable == isAvailable.Value);
+            }
+
+            var products = await query
+                .OrderByDescending(x => x.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var productIds = products.Select(x => x.Id).ToList();
+
+            var sizes = await _db.ProductSizes
+                .AsNoTracking()
+                .Where(x =>
+                    productIds.Contains(x.ProductId) &&
+                    !x.IsDeleted)
+                .ToListAsync();
+
+            var result = products.Select(product =>
+            {
+                var dto = _mapper.Map<ProductDto>(product);
+
+                dto.Sizes = sizes
+                    .Where(x => x.ProductId == product.Id)
+                    .Select(x => new ProductSizeDto
+                    {
+                        SizeValue = x.SizeValue,
+                        StockQuantity = x.StockQuantity
+                    })
+                    .ToList();
+
+                return dto;
+            }).ToList();
+
+            return _response.Create<IEnumerable<ProductDto>>(
+                true,
+                200,
+                "Success",
+                result);
         }
 
         public async Task<ServiceResponse<ProductDto>> GetByIdAsync(int id)
         {
             var product = await _db.Products
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
+                .FirstOrDefaultAsync(x =>
+                    x.Id == id &&
+                    !x.IsDeleted);
 
             if (product == null)
-                return _response.Create<ProductDto>(false, 404, "Not found", null);
+            {
+                return _response.Create<ProductDto>(
+                    false,
+                    404,
+                    "Product not found",
+                    null);
+            }
 
             var sizes = await _db.ProductSizes
                 .AsNoTracking()
-                .Where(s => s.ProductId == id && !s.IsDeleted)
+                .Where(x =>
+                    x.ProductId == id &&
+                    !x.IsDeleted)
                 .ToListAsync();
 
-            var dto = mapper.Map<ProductDto>(product);
-            dto.Sizes = mapper.Map<List<ProductSizeDto>>(sizes);
+            var dto = _mapper.Map<ProductDto>(product);
 
-            return _response.Create(true, 200, "Success", dto);
+            dto.Sizes = sizes.Select(x => new ProductSizeDto
+            {
+                SizeValue = x.SizeValue,
+                StockQuantity = x.StockQuantity
+            }).ToList();
+
+            return _response.Create(
+                true,
+                200,
+                "Success",
+                dto);
         }
 
-        public async Task<ServiceResponse<ProductDto>> UpdateAsync(int id, ProductDto model)
+        public async Task<ServiceResponse<ProductDto>> UpdateAsync(
+            ProductDto model,
+            IFormFileCollection? productImages)
         {
-            var product = await _db.Products.FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
+            var product = await _db.Products
+                .FirstOrDefaultAsync(x =>
+                    x.Id == model.Id &&
+                    !x.IsDeleted);
 
             if (product == null)
-                return _response.Create<ProductDto>(false, 404, "Not found", null);
+            {
+                return _response.Create<ProductDto>(
+                    false,
+                    404,
+                    "Product not found",
+                    null);
+            }
 
-            mapper.Map(model, product);
+            product.Name = model.Name;
+            product.Brand = model.Brand;
+            product.Description = model.Description;
+            product.Price = model.Price;
+            product.CategoryId = model.CategoryId;
+            product.Color = model.Color;
+
+            // Remove old sizes
+            var existingSizes = await _db.ProductSizes
+                .Where(x => x.ProductId == product.Id)
+                .ToListAsync();
+
+            _db.ProductSizes.RemoveRange(existingSizes);
+
+            // Add new sizes
+            if (model.Sizes.Any())
+            {
+                var newSizes = model.Sizes.Select(x => new ProductSize
+                {
+                    ProductId = product.Id,
+                    SizeValue = x.SizeValue,
+                    StockQuantity = x.StockQuantity
+                });
+
+                await _db.ProductSizes.AddRangeAsync(newSizes);
+            }
+
+            // Upload new images
+            if (productImages != null && productImages.Count > 0)
+            {
+                var uploadedImages =
+                    await _mediaService.UploadProductMediaAsync(
+                        product.Id,
+                        productImages);
+
+                var firstImage = uploadedImages.FirstOrDefault();
+
+                if (firstImage != null)
+                {
+                    product.ThumbnailUrl = firstImage.FileUrl;
+                }
+            }
 
             await _db.SaveChangesAsync();
 
-            return _response.Create(true, 200, "Updated", mapper.Map<ProductDto>(product));
+            var dto = _mapper.Map<ProductDto>(product);
+
+            dto.Sizes = model.Sizes;
+
+            return _response.Create(
+                true,
+                200,
+                "Product updated successfully",
+                dto);
         }
 
         public async Task<ServiceResponse<string>> DeleteAsync(int id)
         {
-            var product = await _db.Products.FirstOrDefaultAsync(c => c.Id == id);
+            var product = await _db.Products
+                .FirstOrDefaultAsync(x =>
+                    x.Id == id &&
+                    !x.IsDeleted);
 
             if (product == null)
-                return _response.Create<string>(false, 404, "Not found", null);
-
-            product.IsDeleted = true;
-            await _db.SaveChangesAsync();
-
-            return _response.Create<string>(true, 200, "Deleted", null);
-        }
-
-        public async Task<ServiceResponse<IEnumerable<ProductDto>>> SearchAsync(ProductFilterDto filter)
-        {
-            var query = _db.Products
-                .AsNoTracking()
-                .Where(p => !p.IsDeleted);
-
-            if (!string.IsNullOrWhiteSpace(filter.Search))
-                query = query.Where(p => p.Name.Contains(filter.Search));
-
-            if (!string.IsNullOrWhiteSpace(filter.Brand))
-                query = query.Where(p => p.Brand == filter.Brand);
-
-            if (!string.IsNullOrWhiteSpace(filter.Color))
-                query = query.Where(p => p.Color == filter.Color);
-
-            if (filter.CategoryId.HasValue)
-                query = query.Where(p => p.CategoryId == filter.CategoryId);
-
-            if (filter.MinPrice.HasValue)
-                query = query.Where(p => p.Price >= filter.MinPrice.Value);
-
-            if (filter.MaxPrice.HasValue)
-                query = query.Where(p => p.Price <= filter.MaxPrice.Value);
-
-            var products = await query
-                .OrderByDescending(p => p.CreatedAt)
-                .Skip((filter.Page - 1) * filter.PageSize)
-                .Take(filter.PageSize)
-                .ToListAsync();
-
-            var result = new List<ProductDto>();
-
-            foreach (var product in products)
             {
-                var sizes = await _db.ProductSizes
-                    .AsNoTracking()
-                    .Where(s => s.ProductId == product.Id && !s.IsDeleted)
-                    .ToListAsync();
-
-                var dto = mapper.Map<ProductDto>(product);
-                dto.Sizes = mapper.Map<List<ProductSizeDto>>(sizes);
-
-                result.Add(dto);
+                return _response.Create<string>(
+                    false,
+                    404,
+                    "Product not found",
+                    null);
             }
 
-            return _response.Create<IEnumerable<ProductDto>>(true, 200, "Search results", result);
+            product.IsDeleted = true;
+
+            var sizes = await _db.ProductSizes
+                .Where(x => x.ProductId == id)
+                .ToListAsync();
+
+            foreach (var size in sizes)
+            {
+                size.IsDeleted = true;
+            }
+
+            await _db.SaveChangesAsync();
+
+            return _response.Create<string>(
+                true,
+                200,
+                "Product deleted successfully",
+                null);
         }
     }
 }

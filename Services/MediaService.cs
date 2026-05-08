@@ -15,8 +15,8 @@ namespace online_store_api.Services
         private readonly SirvAuthService _authService = authService;
 
 
-        // ----------------------------- Property Images ------------------------------
-        public async Task<List<ProductImage>> UploadMediaAsync(int id, IFormFileCollection files)
+        // ----------------------------- Product Images ------------------------------
+        public async Task<List<ProductImage>> UploadProductMediaAsync(int id, IFormFileCollection files)
         {
             var sirvFolder = $"online-store/products/{id}";
             var uploadedMedia = new List<ProductImage>();
@@ -52,7 +52,6 @@ namespace online_store_api.Services
                     throw new Exception($"Upload failed for {file.FileName}: {response.StatusCode}");
                 }
 
-                // Create new record
                 var media = new ProductImage
                 {
                     ProductId = id,
@@ -72,7 +71,7 @@ namespace online_store_api.Services
             return uploadedMedia;
         }
 
-        public async Task<List<ProductImage>> GetMediaByProductIdAsync(int id)
+        public async Task<List<ProductImage>> GetProductMediaByIdAsync(int id)
         {
             // Retrieve directly from DB (faster)
             var mediaFromDb = await _db.ProductImages
@@ -118,14 +117,13 @@ namespace online_store_api.Services
                 }
             }
 
-            // Cache Sirv results in DB
             _db.ProductImages.AddRange(mediaList);
             await _db.SaveChangesAsync();
 
             return mediaList;
         }
 
-        public async Task<bool> DeleteMediaAsync(int id, string fileName)
+        public async Task<bool> DeleteProductMediaAsync(int id, string fileName)
         {
             var sirvFolder = $"online-store/products/{id}";
             var token = await _authService.GetAccessTokenAsync();
@@ -241,18 +239,6 @@ namespace online_store_api.Services
             response.EnsureSuccessStatusCode();
 
             return $"{_config["SirvSettings:CdnUrl"]}/{sirvFolder}/{file.FileName}";
-
-            // Save to User table
-            //var user = await _db.Users.FindAsync(userId);
-
-            //if (user == null)
-            //    throw new Exception("User not found.");
-
-            //user.ThumbnailUrl = url;
-
-            //await _db.SaveChangesAsync();
-
-            //return url;
         }
 
         public async Task<bool> DeleteUserThumbnailAsync(int userId)

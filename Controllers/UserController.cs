@@ -9,22 +9,26 @@ namespace online_store_api.Controllers
         private readonly IUserService _userService = userService;
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            int? id,
+            string? email,
+            string? firstName,
+            string? lastName,
+            int page = 1,
+            int pageSize = 10)
         {
-            var response = await _userService.GetUsersListAsync();
+            var response = await _userService.GetAllAsync(
+                id,
+                email,
+                firstName,
+                lastName,
+                page,
+                pageSize);
 
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpGet("search")]
-        public async Task<IActionResult> SearchUser(SearchUserModelDto model)
-        {
-            var response = await _userService.SearchUserAsync(model);
-
-            return StatusCode(response.StatusCode, response);
-        }
-
-        [HttpPut("{id}")]
+        [HttpPut]
         public async Task<IActionResult> UpdateUser([FromForm] UserDto model, IFormFile? thumbnail)
         {
             var response = await _userService.UpdateUserAsync(model, thumbnail);
@@ -40,7 +44,7 @@ namespace online_store_api.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("{id}")]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
             var response = await _userService.DeleteUserAsync(id);

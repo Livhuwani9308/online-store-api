@@ -4,15 +4,17 @@ using online_store_api.Services.Interfaces;
 
 namespace online_store_api.Controllers
 {
-    public class MediaController(IMediaService _mediaService) : BaseController
+    public class MediaController(IMediaService mediaService) : BaseController
     {
+        private readonly IMediaService _mediaService = mediaService;
+
         [HttpPost("product/upload/{id}")]
         public async Task<IActionResult> Upload(int id, [FromForm] IFormFileCollection files)
         {
             if (files == null || files.Count == 0)
                 return BadRequest("No files uploaded.");
 
-            var response = await _mediaService.UploadMediaAsync(id, files);
+            var response = await _mediaService.UploadProductMediaAsync(id, files);
 
             return Ok(response);
         }
@@ -20,7 +22,7 @@ namespace online_store_api.Controllers
         [HttpGet("product/{id}")]
         public async Task<IActionResult> GetByProductId(int id)
         {
-            var response = await _mediaService.GetMediaByProductIdAsync(id);
+            var response = await _mediaService.GetProductMediaByIdAsync(id);
 
             return Ok(response);
         }
@@ -28,7 +30,7 @@ namespace online_store_api.Controllers
         [HttpDelete("product/{id}/{fileName}")]
         public async Task<IActionResult> Delete(int id, string fileName)
         {
-            var response = await _mediaService.DeleteMediaAsync(id, fileName);
+            var response = await _mediaService.DeleteProductMediaAsync(id, fileName);
 
             return response ? Ok("Deleted successfully") : StatusCode(500, "Failed to delete media");
         }

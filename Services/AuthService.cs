@@ -23,21 +23,13 @@ namespace online_store_api.Services
                 .FirstOrDefaultAsync(x => x.Email == dto.Email);
 
             if (exists != null)
-                return _response.Create(
-                    false,
-                    400,
-                    "Email already exists",
-                    false);
+                return _response.Create(false, 400, "Email already exists", false);
 
             var role = await _context.Roles
                 .FirstOrDefaultAsync(r => r.Name == "Customer");
 
             if (role == null)
-                return _response.Create(
-                    false,
-                    400,
-                    "Role not found",
-                    false);
+                return _response.Create(false, 400, "Role not found", false);
 
             var user = new User
             {
@@ -52,11 +44,7 @@ namespace online_store_api.Services
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return _response.Create(
-                true,
-                201,
-                "Registration successful",
-                true);
+            return _response.Create(true, 201, "Registration successful", true);
         }
 
         public async Task<ServiceResponse<AuthResponseDto>> LoginAsync(LoginDto dto)
@@ -76,17 +64,10 @@ namespace online_store_api.Services
             ).FirstOrDefaultAsync();
 
             if (userData == null || userData.IsDeleted)
-                return _response.Create<AuthResponseDto>(
-                    false,
-                    401,
-                    "Invalid credentials",
-                    null);
+                return _response.Create<AuthResponseDto>(false, 401, "Invalid credentials", null);
+
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, userData.Password))
-                return _response.Create<AuthResponseDto>(
-                    false,
-                    401,
-                    "Invalid credentials",
-                    null);
+                return _response.Create<AuthResponseDto>(false, 401, "Invalid credentials", null);
 
             var (accessToken, expires) = _jwt.GenerateToken(
                 userData.Id,
@@ -112,11 +93,7 @@ namespace online_store_api.Services
                 ExpiresAt = expires
             };
 
-            return _response.Create(
-                true,
-                200,
-                "Login successful",
-                responseDto);
+            return _response.Create(true, 200, "Login successful", responseDto);
         }
 
         public async Task<ServiceResponse<AuthResponseDto>> RefreshTokenAsync(string refreshToken)
@@ -127,27 +104,15 @@ namespace online_store_api.Services
                     !t.IsRevoked);
 
             if (token == null || token.Expires < DateTime.UtcNow)
-                return _response.Create<AuthResponseDto>(
-                    false,
-                    401,
-                    "Invalid refresh token",
-                    null);
+                return _response.Create<AuthResponseDto>(false, 401, "Invalid refresh token", null);
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == token.UserId);
             if (user == null || user.IsDeleted)
-                return _response.Create<AuthResponseDto>(
-                    false,
-                    401,
-                    "Invalid user",
-                    null);
+                return _response.Create<AuthResponseDto>(false, 401, "Invalid user", null);
 
             var role = await _context.Roles.FirstOrDefaultAsync(r => r.Id == user.RoleId);
             if (role == null)
-                return _response.Create<AuthResponseDto>(
-                    false,
-                    401,
-                    "Invalid role",
-                    null);
+                return _response.Create<AuthResponseDto>(false, 401, "Invalid role", null);
 
             var (accessToken, expires) = _jwt.GenerateToken(
                 user.Id,
@@ -163,11 +128,7 @@ namespace online_store_api.Services
                 ExpiresAt = expires
             };
 
-            return _response.Create(
-                true,
-                200,
-                "Token refreshed",
-                responseDto);
+            return _response.Create(true, 200, "Token refreshed", responseDto);
         }
     }
 }

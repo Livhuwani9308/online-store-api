@@ -5,14 +5,16 @@ namespace online_store_api.Services.Interfaces
 {
     public interface ICategoryService
     {
-        //Task<ServiceResponse<CategoryDto>> CreateAsync(CreateCategoryDto model);
-        //Task<ServiceResponse<IEnumerable<CategoryDto>>> GetAllAsync();
-        //Task<ServiceResponse<CategoryDto>> UpdateAsync(int id, CreateCategoryDto model);
-        //Task<ServiceResponse<string>> DeleteAsync(int id);
         Task<ServiceResponse<CategoryDto>> CreateAsync(CategoryDto model, IFormFile? thumbnail);
-        Task<ServiceResponse<IEnumerable<CategoryDto>>> GetAllAsync();
+
+        Task<ServiceResponse<IEnumerable<CategoryDto>>> GetAllAsync(
+            int? id,
+            string? name,
+            int page = 1,
+            int pageSize = 10);
+
         Task<ServiceResponse<CategoryDto>> UpdateAsync(CategoryDto model, IFormFile? thumbnail);
+
         Task<ServiceResponse<string>> DeleteAsync(int id);
-        Task<ServiceResponse<CategoryDto>> GetByIdAsync(int id);
     }
 }

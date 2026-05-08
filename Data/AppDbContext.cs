@@ -21,10 +21,6 @@ namespace online_store_api.Data
         {
             base.OnModelCreating(builder);
 
-            //builder.Entity<User>()
-            //    .Property(u => u.RowVersion)
-            //    .IsRowVersion();
-
             builder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();

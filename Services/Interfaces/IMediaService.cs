@@ -5,9 +5,9 @@ namespace online_store_api.Services.Interfaces
     public interface IMediaService
     {
         // -------------------- Property Images --------------------
-        Task<List<ProductImage>> UploadMediaAsync(int id, IFormFileCollection files);
-        Task<List<ProductImage>> GetMediaByProductIdAsync(int id);
-        Task<bool> DeleteMediaAsync(int id, string fileName);
+        Task<List<ProductImage>> UploadProductMediaAsync(int id, IFormFileCollection files);
+        Task<List<ProductImage>> GetProductMediaByIdAsync(int id);
+        Task<bool> DeleteProductMediaAsync(int id, string fileName);
 
         // -------------------- Category Thumbnail --------------------
         Task<string> UploadCategoryThumbnailAsync(int categoryId, IFormFile file);
