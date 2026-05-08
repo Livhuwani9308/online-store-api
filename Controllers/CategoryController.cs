@@ -5,10 +5,8 @@ using online_store_api.Services.Interfaces;
 
 namespace online_store_api.Controllers
 {
-    public class CategoryController(ICategoryService service) : BaseController
+    public class CategoryController(ICategoryService _service) : BaseController
     {
-        private readonly ICategoryService _service = service;
-
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> GetAll()
@@ -20,8 +18,10 @@ namespace online_store_api.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Create(CategoryDto model, IFormFile? thumbnail)
+        public async Task<IActionResult> Create([FromForm] string name, IFormFile thumbnail)
         {
+            var model = new CategoryDto { Name = name };
+
             var response = await _service.CreateAsync(model, thumbnail);
 
             return StatusCode(response.StatusCode, response);

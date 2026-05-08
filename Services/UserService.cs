@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using online_store_api.Common;
 using online_store_api.Data;
 using online_store_api.Helpers;
@@ -7,90 +8,8 @@ using online_store_api.Services.Interfaces;
 
 namespace online_store_api.Services
 {
-    public class UserService(AppDbContext _db, IResponseHelper _response) : IUserService
+    public class UserService(AppDbContext _db, IResponseHelper _response, IMapper mapper, IMediaService _mediaService) : IUserService
     {
-        //public async Task<ServiceResponse<UserDto>> LoginAsync(LoginDto model)
-        //{
-        //    try
-        //    {
-        //        if (model == null)
-        //            return _response.Create<UserDto>(false, 400, "Invalid request", null);
-
-        //        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email.ToLower());
-
-        //        if (user == null)
-        //            return _response.Create<UserDto>(false, 401, "Invalid email or password.", null);
-
-        //        if (!BCrypt.Net.BCrypt.Verify(model.Password, user.Password))
-        //            return _response.Create<UserDto>(false, 401, "Invalid email or password.", null);
-
-        //        var response = new UserDto()
-        //        {
-        //            Id = user.Id,
-        //            FirstName = user.FirstName,
-        //            LastName = user.LastName,
-        //            Email = user.Email,
-        //            Phone = user.Phone,
-        //        };
-
-        //        var role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == user.RoleId);
-
-        //        var token = _token.GenerateToken(response.Id, response.Email, role?.Name ?? "User");
-
-        //        return _response.Create(true, 200, "Login successful.", response);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex.Message);
-        //        return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
-        //    }
-        //}
-
-        //public async Task<ServiceResponse<UserDto>> RegisterAsync(User model)
-        //{
-        //    try
-        //    {
-        //        if (
-        //            model == null ||
-        //            string.IsNullOrWhiteSpace(model.FirstName) ||
-        //            string.IsNullOrWhiteSpace(model.LastName) ||
-        //            string.IsNullOrWhiteSpace(model.Email) ||
-        //            string.IsNullOrWhiteSpace(model.Phone) ||
-        //            string.IsNullOrWhiteSpace(model.Password)
-        //            )
-        //        {
-        //            return _response.Create<UserDto>(false, 400, "Invalid request.", null);
-        //        }
-
-        //        var userExists = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email.ToLower());
-
-        //        if (userExists != null)
-        //            return _response.Create<UserDto>(false, 409, "Duplicate record found.", null); // 400 - test 409
-
-        //        model.Email = model.Email.ToLower();
-        //        model.Password = BCrypt.Net.BCrypt.HashPassword(model.Password);
-
-        //        _db.Users.Add(model);
-        //        await _db.SaveChangesAsync();
-
-        //        var responseData = new UserDto()
-        //        {
-        //            Id = model.Id,
-        //            FirstName = model.FirstName,
-        //            LastName = model.LastName,
-        //            Phone = model.Phone,
-        //            Email = model.Email
-        //        };
-
-        //        return _response.Create(true, 201, "User created successfully.", responseData);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex.Message);
-        //        return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
-        //    }
-        //}
-
         public async Task<ServiceResponse<string>> ResetPasswordAsync(int id, ResetPasswordDto model)
         {
             try
@@ -141,7 +60,8 @@ namespace online_store_api.Services
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     Email = user.Email,
-                    Phone = user.Phone
+                    Phone = user.Phone,
+                    ThumbnailUrl = user.ThumbnailUrl
                 }).ToListAsync();
 
                 return _response.Create<IEnumerable<UserDto>>(true, 200, "Users retrieved successfully.", users);
@@ -167,7 +87,8 @@ namespace online_store_api.Services
                         FirstName = query.FirstName,
                         LastName = query.LastName,
                         Email = query.Email,
-                        Phone = query.Phone
+                        Phone = query.Phone,
+                        ThumbnailUrl = query.ThumbnailUrl
                     };
                     return _response.Create(true, 200, "Users retrieved successfully.", response);
                 }
@@ -180,39 +101,66 @@ namespace online_store_api.Services
             }
         }
 
-        public async Task<ServiceResponse<UserDto>> UpdateUserAsync(int id, UserDto model)
+        public async Task<ServiceResponse<UserDto>> UpdateUserAsync(UserDto model, IFormFile? thumbnail)
         {
             try
             {
-                if (id != model.Id)
+                if (model.Id != model.Id)
                     return _response.Create<UserDto>(false, 400, "Invalid request.", null);
 
-                var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.IsDeleted == false);
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == model.Id && u.IsDeleted == false);
 
                 if (user == null)
                     return _response.Create<UserDto>(false, 404, "User not found.", null);
 
-                user.FirstName = string.IsNullOrWhiteSpace(model.FirstName) ? user.FirstName : model.FirstName;
-                user.LastName = string.IsNullOrWhiteSpace(model.LastName) ? user.LastName : model.LastName;
-                user.Phone = string.IsNullOrWhiteSpace(model.Phone) ? user.Phone : model.Phone;
-                user.Email = string.IsNullOrWhiteSpace(model.Email) ? user.Email : model.Email;
+                user.FirstName =
+                    string.IsNullOrWhiteSpace(model.FirstName)
+                        ? user.FirstName
+                        : model.FirstName;
+
+                user.LastName =
+                    string.IsNullOrWhiteSpace(model.LastName)
+                        ? user.LastName
+                        : model.LastName;
+
+                user.Phone =
+                    string.IsNullOrWhiteSpace(model.Phone)
+                        ? user.Phone
+                        : model.Phone;
+
+                user.Email =
+                    string.IsNullOrWhiteSpace(model.Email)
+                        ? user.Email
+                        : model.Email;
+
+                // Upload thumbnail if provided
+                if (thumbnail != null)
+                {
+                    var url = await _mediaService.UploadUserThumbnailAsync(user.Id, thumbnail);
+                    user.ThumbnailUrl = url;
+                }
 
                 _db.Users.Update(user);
                 await _db.SaveChangesAsync();
 
-                var updatedUserDto = new UserDto()
-                {
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Email = user.Email,
-                    Phone = user.Phone,
-                };
+                var dto = mapper.Map<UserDto>(user);
 
-                return _response.Create(true, 200, "User updated successfully.", updatedUserDto);
+                //var updatedUserDto = new UserDto()
+                //{
+                //    Id = user.Id,
+                //    FirstName = user.FirstName,
+                //    LastName = user.LastName,
+                //    Email = user.Email,
+                //    Phone = user.Phone,
+                //    ThumbnailUrl = user.ThumbnailUrl
+                //};
+
+                return _response.Create(true, 200, "User updated successfully.", dto);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+
                 return _response.Create<UserDto>(false, 500, "An unexpected error occurred.", null);
             }
         }

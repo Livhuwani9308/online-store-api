@@ -54,6 +54,25 @@ namespace online_store_api.Controllers
             return result ? Ok("Deleted") : NotFound();
         }
 
+        [HttpPost("user/upload/{id}")]
+        public async Task<IActionResult> UploadUserThumbnail(int id, IFormFile file)
+        {
+            if (file == null)
+                return BadRequest("No file uploaded.");
+
+            var result = await _mediaService.UploadUserThumbnailAsync(id, file);
+
+            return Ok(new { thumbnailUrl = result });
+        }
+
+        [HttpDelete("user/{id}")]
+        public async Task<IActionResult> DeleteUserThumbnail(int id)
+        {
+            var result = await _mediaService.DeleteUserThumbnailAsync(id);
+
+            return result ? Ok("Deleted") : NotFound();
+        }
+
         //[HttpPost("tenant/upload/{tenantId}")]
         //public async Task<IActionResult> UploadTenantDocuments(int tenantId, [FromForm] IFormFileCollection files)
         //{

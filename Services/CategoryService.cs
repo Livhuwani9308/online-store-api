@@ -16,6 +16,13 @@ namespace online_store_api.Services
     {
         public async Task<ServiceResponse<CategoryDto>> CreateAsync(CategoryDto model, IFormFile? thumbnail)
         {
+            var exists = await _db.Categories.AnyAsync(x => x.Name.ToLower() == model.Name.ToLower());
+
+            if (exists)
+            {
+                return _response.Create<CategoryDto>(false, 409, "Category already exists", null);
+            }
+
             var category = mapper.Map<Category>(model);
             category.CreatedAt = DateTime.UtcNow;
 
@@ -38,6 +45,7 @@ namespace online_store_api.Services
         {
             var categories = await _db.Categories
                 .Where(c => !c.IsDeleted)
+                .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
 
             var dto = mapper.Map<IEnumerable<CategoryDto>>(categories);
@@ -61,10 +69,20 @@ namespace online_store_api.Services
 
         public async Task<ServiceResponse<CategoryDto>> UpdateAsync(CategoryDto model, IFormFile? thumbnail)
         {
-            var category = await _db.Categories.FindAsync(model.Id);
+            var category = await _db.Categories.FirstOrDefaultAsync(x => x.Id == model.Id && !x.IsDeleted);
 
             if (category == null)
                 return _response.Create<CategoryDto>(false, 404, "Not found", null);
+
+            var normalizedName = model.Name.Trim().ToLower();
+
+            var exists = await _db.Categories.AnyAsync(x =>
+                x.Id != model.Id &&
+                x.Name.ToLower() == normalizedName &&
+                !x.IsDeleted);
+
+            if (exists)
+                return _response.Create<CategoryDto>(false, 409, "Category already exists", null);
 
             mapper.Map(model, category);
 
@@ -82,7 +100,7 @@ namespace online_store_api.Services
 
         public async Task<ServiceResponse<string>> DeleteAsync(int id)
         {
-            var category = await _db.Categories.FindAsync(id);
+            var category = await _db.Categories.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
             if (category == null)
                 return _response.Create<string>(false, 404, "Not found", null);

@@ -11,10 +11,11 @@ namespace online_store_api.Models.User
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-        public bool IsDeleted { get; set; } = false;
 
+        public string? ThumbnailUrl { get; set; }
         public int RoleId { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsDeleted { get; set; } = false;
         //public byte[] RowVersion { get; set; } = default!;
     }
 }

@@ -13,6 +13,10 @@ namespace online_store_api.Services.Interfaces
         Task<string> UploadCategoryThumbnailAsync(int categoryId, IFormFile file);
         Task<bool> DeleteCategoryThumbnailAsync(int id);
 
+        // -------------------- User Thumbnail --------------------
+        Task<string> UploadUserThumbnailAsync(int userId, IFormFile file);
+        Task<bool> DeleteUserThumbnailAsync(int userId);
+
         // -------------------- Tenant Documents --------------------
         //Task<List<TenantDocument>> UploadTenantDocumentsAsync(int tenantId, IFormFileCollection files);
         //Task<List<TenantDocument>> GetTenantDocumentsAsync(int tenantId);

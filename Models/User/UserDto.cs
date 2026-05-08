@@ -10,5 +10,6 @@ namespace online_store_api.Models.User
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
+        public string? ThumbnailUrl { get; set; }
     }
 }

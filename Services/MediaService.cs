@@ -151,37 +151,43 @@ namespace online_store_api.Services
         }
 
         // -------------------- Category Thumbnail --------------------
-        public async Task<string> UploadCategoryThumbnailAsync(int categoryId, IFormFile file)
+        public async Task<string> UploadCategoryThumbnailAsync(
+            int categoryId,
+            IFormFile file)
         {
             var sirvFolder = $"online-store/categories/{categoryId}";
+
             var token = await _authService.GetAccessTokenAsync();
 
-            var sirvUploadUrl =
-                $"{_config["SirvSettings:BaseUrl"]}/files/upload?filename=/{sirvFolder}/{file.FileName}";
+            var filePath = $"/{sirvFolder}/{file.FileName}";
+
+            var uploadUrl =
+                $"{_config["SirvSettings:BaseUrl"]}/files/upload?filename={filePath}";
 
             using var stream = file.OpenReadStream();
-            using var content = new StreamContent(stream);
-            content.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
 
-            var request = new HttpRequestMessage(HttpMethod.Post, sirvUploadUrl)
-            {
-                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", token) },
-                Content = content
-            };
+            using var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType =
+                new MediaTypeHeaderValue(file.ContentType);
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, uploadUrl);
+
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            request.Content = fileContent;
 
             var response = await _httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
 
-            var url =
-                $"{_config["SirvSettings:CdnUrl"]}/{sirvFolder}/{file.FileName}";
+            var responseBody = await response.Content.ReadAsStringAsync();
 
-            // Save to Category table
-            var category = await _db.Categories.FindAsync(categoryId);
-            category.ThumbnailUrl = url;
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception(
+                    $"Sirv Upload Failed: {response.StatusCode} - {responseBody}");
+            }
 
-            await _db.SaveChangesAsync();
-
-            return url;
+            return $"{_config["SirvSettings:CdnUrl"]}/{sirvFolder}/{file.FileName}";
         }
 
         public async Task<bool> DeleteCategoryThumbnailAsync(int categoryId)
@@ -202,6 +208,78 @@ namespace online_store_api.Services
             await _httpClient.SendAsync(request);
 
             category.ThumbnailUrl = null;
+            await _db.SaveChangesAsync();
+
+            return true;
+        }
+
+        // -------------------- User Thumbnail --------------------
+        public async Task<string> UploadUserThumbnailAsync(int userId, IFormFile file)
+        {
+            var sirvFolder = $"online-store/users/{userId}";
+            var token = await _authService.GetAccessTokenAsync();
+
+            var sirvUploadUrl =
+                $"{_config["SirvSettings:BaseUrl"]}/files/upload?filename=/{sirvFolder}/{file.FileName}";
+
+            using var stream = file.OpenReadStream();
+            using var content = new StreamContent(stream);
+
+            content.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+
+            var request = new HttpRequestMessage(HttpMethod.Post, sirvUploadUrl)
+            {
+                Headers =
+                {
+                    Authorization = new AuthenticationHeaderValue("Bearer", token)
+                },
+                Content = content
+            };
+
+            var response = await _httpClient.SendAsync(request);
+
+            response.EnsureSuccessStatusCode();
+
+            return $"{_config["SirvSettings:CdnUrl"]}/{sirvFolder}/{file.FileName}";
+
+            // Save to User table
+            //var user = await _db.Users.FindAsync(userId);
+
+            //if (user == null)
+            //    throw new Exception("User not found.");
+
+            //user.ThumbnailUrl = url;
+
+            //await _db.SaveChangesAsync();
+
+            //return url;
+        }
+
+        public async Task<bool> DeleteUserThumbnailAsync(int userId)
+        {
+            var user = await _db.Users.FindAsync(userId);
+
+            if (user == null || string.IsNullOrEmpty(user.ThumbnailUrl))
+                return false;
+
+            var fileName = Path.GetFileName(user.ThumbnailUrl);
+
+            var sirvFolder = $"online-store/users/{userId}";
+
+            var token = await _authService.GetAccessTokenAsync();
+
+            var deleteUrl =
+                $"{_config["SirvSettings:BaseUrl"]}/files/delete?filename=/{sirvFolder}/{fileName}";
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, deleteUrl);
+
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            await _httpClient.SendAsync(request);
+
+            user.ThumbnailUrl = null;
+
             await _db.SaveChangesAsync();
 
             return true;
@@ -337,14 +415,6 @@ namespace online_store_api.Services
 
         //    return true;
         //}
-
-
-
-
-
-
-
-
     }
     //public async Task<List<Media>> UploadMediaAsync(int id, IFormFileCollection files)
     //{
