@@ -220,5 +220,76 @@ namespace online_store_api.Services
                 return _response.Create<string>(false, 500, ex.Message, null);
             }
         }
+
+        public async Task<ServiceResponse<UserDto>> CreateUserAsync(CreateUserDto model, IFormFile? thumbnail)
+        {
+            try
+            {
+                var exists = await _db.Users
+                    .AnyAsync(x => x.Email == model.Email);
+
+                if (exists)
+                {
+                    return _response.Create<UserDto>(
+                        false,
+                        400,
+                        "Email already exists.",
+                        null);
+                }
+
+                var role = await _db.Roles
+                    .FirstOrDefaultAsync(r => r.Name == model.Role);
+
+                if (role == null)
+                {
+                    return _response.Create<UserDto>(
+                        false,
+                        400,
+                        "Role not found.",
+                        null);
+                }
+
+                var user = new User
+                {
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    Email = model.Email,
+                    Phone = model.Phone,
+                    Password = BCrypt.Net.BCrypt.HashPassword(model.Password),
+                    RoleId = role.Id,
+                    IsDeleted = false
+                };
+
+                _db.Users.Add(user);
+
+                await _db.SaveChangesAsync();
+
+                if (thumbnail != null)
+                {
+                    var url = await _mediaService
+                        .UploadUserThumbnailAsync(user.Id, thumbnail);
+
+                    user.ThumbnailUrl = url;
+
+                    await _db.SaveChangesAsync();
+                }
+
+                var dto = mapper.Map<UserDto>(user);
+
+                return _response.Create(
+                    true,
+                    201,
+                    "User created successfully.",
+                    dto);
+            }
+            catch (Exception ex)
+            {
+                return _response.Create<UserDto>(
+                    false,
+                    500,
+                    ex.Message,
+                    null);
+            }
+        }
     }
 }

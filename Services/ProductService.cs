@@ -15,12 +15,79 @@ namespace online_store_api.Services
         IMediaService _mediaService)
         : IProductService
     {
+        //public async Task<ServiceResponse<ProductDto>> CreateAsync(
+        //    ProductDto model,
+        //    IFormFileCollection? productImages)
+        //{
+        //    var categoryExists = await _db.Categories
+        //        .AnyAsync(x => x.Id == model.CategoryId);
+
+        //    if (!categoryExists)
+        //    {
+        //        return _response.Create<ProductDto>(
+        //            false,
+        //            404,
+        //            "Category not found",
+        //            null);
+        //    }
+
+        //    var product = _mapper.Map<Product>(model);
+
+        //    product.CreatedAt = DateTime.UtcNow;
+
+        //    _db.Products.Add(product);
+
+        //    await _db.SaveChangesAsync();
+
+        //    // Sizes
+        //    if (model.Sizes.Any())
+        //    {
+        //        var sizes = model.Sizes.Select(x => new ProductSize
+        //        {
+        //            ProductId = product.Id,
+        //            SizeValue = x.SizeValue,
+        //            StockQuantity = x.StockQuantity
+        //        });
+
+        //        await _db.ProductSizes.AddRangeAsync(sizes);
+
+        //        await _db.SaveChangesAsync();
+        //    }
+
+        //    // Images
+        //    if (productImages != null && productImages.Count > 0)
+        //    {
+        //        var uploadedImages =
+        //            await _mediaService.UploadProductMediaAsync(
+        //                product.Id,
+        //                productImages);
+
+        //        var firstImage = uploadedImages.FirstOrDefault();
+
+        //        if (firstImage != null)
+        //        {
+        //            product.ThumbnailUrl = firstImage.FileUrl;
+
+        //            await _db.SaveChangesAsync();
+        //        }
+        //    }
+
+        //    var dto = _mapper.Map<ProductDto>(product);
+
+        //    dto.Sizes = model.Sizes;
+
+        //    return _response.Create(
+        //        true,
+        //        201,
+        //        "Product created successfully",
+        //        dto);
+        //}
         public async Task<ServiceResponse<ProductDto>> CreateAsync(
             ProductDto model,
             IFormFileCollection? productImages)
         {
             var categoryExists = await _db.Categories
-                .AnyAsync(x => x.Id == model.CategoryId);
+                .AnyAsync(x => x.Id == model.CategoryId && !x.IsDeleted);
 
             if (!categoryExists)
             {
@@ -39,7 +106,7 @@ namespace online_store_api.Services
 
             await _db.SaveChangesAsync();
 
-            // Sizes
+            // ---------------- Sizes ----------------
             if (model.Sizes.Any())
             {
                 var sizes = model.Sizes.Select(x => new ProductSize
@@ -54,13 +121,13 @@ namespace online_store_api.Services
                 await _db.SaveChangesAsync();
             }
 
-            // Images
+            // ---------------- Images ----------------
+            List<ProductImage> uploadedImages = [];
+
             if (productImages != null && productImages.Count > 0)
             {
-                var uploadedImages =
-                    await _mediaService.UploadProductMediaAsync(
-                        product.Id,
-                        productImages);
+                uploadedImages = await _mediaService
+                    .UploadProductMediaAsync(product.Id, productImages);
 
                 var firstImage = uploadedImages.FirstOrDefault();
 
@@ -72,9 +139,16 @@ namespace online_store_api.Services
                 }
             }
 
+            // ---------------- Response ----------------
             var dto = _mapper.Map<ProductDto>(product);
 
             dto.Sizes = model.Sizes;
+
+            dto.Images = uploadedImages
+                .Select(x => x.FileUrl)
+                .ToList();
+
+            dto.ThumbnailUrl = product.ThumbnailUrl;
 
             return _response.Create(
                 true,
@@ -94,9 +168,7 @@ namespace online_store_api.Services
             int page = 1,
             int pageSize = 10)
         {
-            var query = _db.Products
-                .AsNoTracking()
-                .Where(x => !x.IsDeleted);
+            var query = _db.Products.AsNoTracking().Where(x => !x.IsDeleted);
 
             // Filters
             if (!string.IsNullOrWhiteSpace(search))
@@ -148,6 +220,30 @@ namespace online_store_api.Services
                 .Take(pageSize)
                 .ToListAsync();
 
+            //var productIds = products.Select(x => x.Id).ToList();
+
+            //var sizes = await _db.ProductSizes
+            //    .AsNoTracking()
+            //    .Where(x =>
+            //        productIds.Contains(x.ProductId) &&
+            //        !x.IsDeleted)
+            //    .ToListAsync();
+
+            //var result = products.Select(product =>
+            //{
+            //    var dto = _mapper.Map<ProductDto>(product);
+
+            //    dto.Sizes = sizes
+            //        .Where(x => x.ProductId == product.Id)
+            //        .Select(x => new ProductSizeDto
+            //        {
+            //            SizeValue = x.SizeValue,
+            //            StockQuantity = x.StockQuantity
+            //        })
+            //        .ToList();
+
+            //    return dto;
+            //}).ToList();
             var productIds = products.Select(x => x.Id).ToList();
 
             var sizes = await _db.ProductSizes
@@ -155,6 +251,11 @@ namespace online_store_api.Services
                 .Where(x =>
                     productIds.Contains(x.ProductId) &&
                     !x.IsDeleted)
+                .ToListAsync();
+
+            var images = await _db.ProductImages
+                .AsNoTracking()
+                .Where(x => productIds.Contains(x.ProductId))
                 .ToListAsync();
 
             var result = products.Select(product =>
@@ -170,16 +271,56 @@ namespace online_store_api.Services
                     })
                     .ToList();
 
+                dto.Images = images
+                    .Where(x => x.ProductId == product.Id)
+                    .Select(x => x.FileUrl)
+                    .ToList();
+
                 return dto;
+
             }).ToList();
 
-            return _response.Create<IEnumerable<ProductDto>>(
-                true,
-                200,
-                "Success",
-                result);
+            return _response.Create<IEnumerable<ProductDto>>(true, 200, "Success", result);
         }
 
+        //public async Task<ServiceResponse<ProductDto>> GetByIdAsync(int id)
+        //{
+        //    var product = await _db.Products
+        //        .AsNoTracking()
+        //        .FirstOrDefaultAsync(x =>
+        //            x.Id == id &&
+        //            !x.IsDeleted);
+
+        //    if (product == null)
+        //    {
+        //        return _response.Create<ProductDto>(
+        //            false,
+        //            404,
+        //            "Product not found",
+        //            null);
+        //    }
+
+        //    var sizes = await _db.ProductSizes
+        //        .AsNoTracking()
+        //        .Where(x =>
+        //            x.ProductId == id &&
+        //            !x.IsDeleted)
+        //        .ToListAsync();
+
+        //    var dto = _mapper.Map<ProductDto>(product);
+
+        //    dto.Sizes = sizes.Select(x => new ProductSizeDto
+        //    {
+        //        SizeValue = x.SizeValue,
+        //        StockQuantity = x.StockQuantity
+        //    }).ToList();
+
+        //    return _response.Create(
+        //        true,
+        //        200,
+        //        "Success",
+        //        dto);
+        //}
         public async Task<ServiceResponse<ProductDto>> GetByIdAsync(int id)
         {
             var product = await _db.Products
@@ -204,6 +345,11 @@ namespace online_store_api.Services
                     !x.IsDeleted)
                 .ToListAsync();
 
+            var images = await _db.ProductImages
+                .AsNoTracking()
+                .Where(x => x.ProductId == id)
+                .ToListAsync();
+
             var dto = _mapper.Map<ProductDto>(product);
 
             dto.Sizes = sizes.Select(x => new ProductSizeDto
@@ -211,6 +357,10 @@ namespace online_store_api.Services
                 SizeValue = x.SizeValue,
                 StockQuantity = x.StockQuantity
             }).ToList();
+
+            dto.Images = images
+                .Select(x => x.FileUrl)
+                .ToList();
 
             return _response.Create(
                 true,
@@ -264,11 +414,39 @@ namespace online_store_api.Services
                 await _db.ProductSizes.AddRangeAsync(newSizes);
             }
 
-            // Upload new images
+            //// Upload new images
+            //if (productImages != null && productImages.Count > 0)
+            //{
+            //    var uploadedImages =
+            //        await _mediaService.UploadProductMediaAsync(
+            //            product.Id,
+            //            productImages);
+
+            //    var firstImage = uploadedImages.FirstOrDefault();
+
+            //    if (firstImage != null)
+            //    {
+            //        product.ThumbnailUrl = firstImage.FileUrl;
+            //    }
+            //}
+
+            //await _db.SaveChangesAsync();
+
+            //var dto = _mapper.Map<ProductDto>(product);
+
+            //dto.Sizes = model.Sizes;
+
+            //return _response.Create(
+            //    true,
+            //    200,
+            //    "Product updated successfully",
+            //    dto);
+            List<ProductImage> uploadedImages = [];
+
             if (productImages != null && productImages.Count > 0)
             {
-                var uploadedImages =
-                    await _mediaService.UploadProductMediaAsync(
+                uploadedImages = await _mediaService
+                    .UploadProductMediaAsync(
                         product.Id,
                         productImages);
 
@@ -282,9 +460,17 @@ namespace online_store_api.Services
 
             await _db.SaveChangesAsync();
 
+            var allImages = await _db.ProductImages
+                .Where(x => x.ProductId == product.Id)
+                .ToListAsync();
+
             var dto = _mapper.Map<ProductDto>(product);
 
             dto.Sizes = model.Sizes;
+
+            dto.Images = allImages
+                .Select(x => x.FileUrl)
+                .ToList();
 
             return _response.Create(
                 true,

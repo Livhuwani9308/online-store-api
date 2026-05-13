@@ -1,5 +1,6 @@
 using online_store_api.Data.Seed;
 using online_store_api.Extensions;
+using online_store_api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +10,7 @@ builder.Services.AddIdentityServices(builder.Configuration);
 
 var app = builder.Build();
 
-//app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseSession();
 

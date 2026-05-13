@@ -10,7 +10,7 @@ namespace online_store_api.Services
 {
     public class CategoryService(
         AppDbContext _db,
-        IMapper mapper,
+        IMapper _mapper,
         IResponseHelper _response,
         IMediaService _mediaService) : ICategoryService
     {
@@ -44,7 +44,7 @@ namespace online_store_api.Services
                 .Take(pageSize)
                 .ToListAsync();
 
-            var dto = mapper.Map<IEnumerable<CategoryDto>>(categories);
+            var dto = _mapper.Map<IEnumerable<CategoryDto>>(categories);
 
             return _response.Create(true, 200, "Categories retrieved successfully.", dto);
         }
@@ -56,7 +56,7 @@ namespace online_store_api.Services
             if (exists)
                 return _response.Create<CategoryDto>(false, 409, "Category already exists", null);
 
-            var category = mapper.Map<Category>(model);
+            var category = _mapper.Map<Category>(model);
             category.CreatedAt = DateTime.UtcNow;
 
             _db.Categories.Add(category);
@@ -69,7 +69,7 @@ namespace online_store_api.Services
                 await _db.SaveChangesAsync();
             }
 
-            var dto = mapper.Map<CategoryDto>(category);
+            var dto = _mapper.Map<CategoryDto>(category);
             return _response.Create(true, 201, "Created", dto);
         }
 
@@ -104,7 +104,7 @@ namespace online_store_api.Services
 
             await _db.SaveChangesAsync();
 
-            var dto = mapper.Map<CategoryDto>(category);
+            var dto = _mapper.Map<CategoryDto>(category);
 
             return _response.Create(true, 200, "Category updated successfully.", dto);
         }

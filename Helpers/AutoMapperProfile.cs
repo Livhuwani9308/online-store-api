@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using online_store_api.Models.Category;
 using online_store_api.Models.Product;
+using online_store_api.Models.User;
 
 namespace online_store_api.Helpers
 {
@@ -11,6 +12,7 @@ namespace online_store_api.Helpers
             CreateMap<Product, ProductDto>().ReverseMap();
             CreateMap<ProductSize, ProductSizeDto>().ReverseMap();
             CreateMap<Category, CategoryDto>().ReverseMap();
+            CreateMap<User, UserDto>();
         }
     }
 }

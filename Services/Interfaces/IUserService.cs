@@ -18,5 +18,7 @@ namespace online_store_api.Services.Interfaces
         Task<ServiceResponse<string>> ResetPasswordAsync(int id, ResetPasswordDto model);
 
         Task<ServiceResponse<string>> DeleteUserAsync(int id);
+
+        Task<ServiceResponse<UserDto>> CreateUserAsync(CreateUserDto model, IFormFile? thumbnail);
     }
 }

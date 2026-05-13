@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using online_store_api.Models.User;
 using online_store_api.Services.Interfaces;
 
@@ -28,7 +29,19 @@ namespace online_store_api.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateUser(
+            [FromForm] CreateUserDto model,
+            IFormFile? thumbnail)
+        {
+            var response = await _userService.CreateUserAsync(model, thumbnail);
+
+            return StatusCode(response.StatusCode, response);
+        }
+
         [HttpPut]
+        [Authorize(Roles = "Admin, Customer")]
         public async Task<IActionResult> UpdateUser([FromForm] UserDto model, IFormFile? thumbnail)
         {
             var response = await _userService.UpdateUserAsync(model, thumbnail);
@@ -45,6 +58,7 @@ namespace online_store_api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin, Customer")]
         public async Task<IActionResult> DeleteUser(int id)
         {
             var response = await _userService.DeleteUserAsync(id);
